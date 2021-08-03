@@ -462,6 +462,7 @@ class SSD300(nn.Module):
             # Check for each class
             for c in range(1, self.n_classes):
                 # Keep only predicted boxes and scores where scores for this class are above the minimum score
+                print(self.n_classes)
                 class_scores = predicted_scores[i][:, c]  # (8732)
                 score_above_min_score = class_scores > min_score  # torch.uint8 (byte) tensor, for indexing
                 n_above_min_score = score_above_min_score.sum().item()

@@ -41,6 +41,7 @@ def main():
     if checkpoint is None:
         start_epoch = 0
         model = SSD300(n_classes=n_classes)
+        print('\nLoaded new SSD300 model')
         # Initialize the optimizer, with twice the default learning rate for biases, as in the original Caffe repo
         biases = list()
         not_biases = list()
@@ -65,6 +66,23 @@ def main():
     model = model.to(device)
     criterion = MultiBoxLoss(priors_cxcy=model.priors_cxcy).to(device)
 
+    # Agrego frizeo de capas
+    for child in model.children():
+        for layer in child.children():
+            for i in layer.parameters():
+                i.requires_grad = False
+                #print(i)
+
+    #  conv 4_3, conv 7, conv 8_2, conv 9_2, conv 10_2, conv 11_2 + pred convs
+    layers = [model.base.conv4_3, model.base.conv7, model.aux_convs.conv8_2, model.aux_convs.conv9_2, model.aux_convs.conv10_2, model.aux_convs.conv11_2]
+
+
+    for l in layers:
+        for i in l.parameters():
+            #print("Frizo capas antes ",i)
+            i.requires_grad = True
+            #print("Frizo capas despues ",i)
+
     # Custom dataloaders
     train_dataset = PascalVOCDataset(data_folder,
                                      split='train',
@@ -77,6 +95,7 @@ def main():
     # To convert iterations to epochs, divide iterations by the number of iterations per epoch
     # The paper trains for 120,000 iterations with a batch size of 32, decays after 80,000 and 100,000 iterations
     epochs = iterations // (len(train_dataset) // 8)
+    epochs = 100  # Para probar
     decay_lr_at = [it // (len(train_dataset) // 8) for it in decay_lr_at]
 
     # Epochs
@@ -94,7 +113,7 @@ def main():
               epoch=epoch)
 
         # Save checkpoint
-        #save_checkpoint(epoch, model, optimizer)
+        save_checkpoint(epoch, model, optimizer)
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
